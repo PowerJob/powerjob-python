@@ -6,15 +6,14 @@
 # ------------------------------------------------------------------
 import time
 from background.model.metrics import SystemMetrics
-from worker.src.worker import Worker
 
 
 class WorkerHeartbeat(object):
 
-    def __init__(self):
-        self.workerAddress = Worker.get_worker_address()
-        self.appName = Worker.get_current_app_name()
-        self.appId = Worker.get_current_app_id()
+    def __init__(self, worker_address, app_id, app_name):
+        self.workerAddress = worker_address
+        self.appName =app_name
+        self.appId = app_id
         self.heartbeatTime = int(round(time.time() * 1000))
         self.protocol = 'HTTP'
         self.client = '5T5'
