@@ -20,6 +20,7 @@ POOL = PersistentDB(
 def get_connection():
     return POOL.connection()
 
+
 def execute(*args):
     conn = POOL.connection()
     conn.cursor().execute(*args)
