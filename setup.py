@@ -22,7 +22,7 @@ setup(
     # Setuptools 模块提供了一个 find_packages 函数,它默认在与 setup.py 文件同一目录下搜索各个含有 __init__.py 的目录做为要添加的包
     packages=find_packages(where='.'),
     # 依赖的其他包，比如 'requests', 'django>=1.11, !=1.11.1, <=2'
-    install_requires=[],
+    install_requires=['DBUtils>=2.0'],
 
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/PowerJob/powerjob-python/issues',
