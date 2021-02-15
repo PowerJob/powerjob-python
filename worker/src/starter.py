@@ -25,10 +25,10 @@ class Worker(object):
         self.server_address = None
 
     def init(self):
-        self.assert_app_name()
-        self.server_discovery()
+        self.appId = self.assert_app_name()
+        self.worker_address = self.server_discovery()
 
-    def assert_app_name(self):
+    def assert_app_name(self) -> int:
         app = self.config.app_name
         for address in self.config.server_address:
             url = ASSERT_APP_URL % (address, app)
@@ -36,26 +36,27 @@ class Worker(object):
             try:
                 result = convert(requests.get(url).text)
                 if result.success:
-                    self.appId = result.data
-                    log.info("[Initialize] assert app[%s] successfully, appId is %d", app, self.appId)
-                    return
+                    app_id = result.data
+                    log.info("[Initialize] assert app[%s] successfully, appId is %d", app, app_id)
+                    return app_id
                 else:
                     log.error("[Initialize] assert app[%s] failed, please register first!", app)
                     raise PowerJobError(result.message)
             except IOError as e:
                 log.warn("[Initialize] request failed, please check server address[%s]", address, e)
+        raise PowerJobError('no server available')
 
-    def server_discovery(self):
+    def server_discovery(self) -> str:
         for address in self.config.server_address:
             try:
                 url = SERVER_DISCOVERY_URL % (address, self.appId, self.server_address)
                 result = convert(requests.get(url).text)
                 if result.success:
                     current_server_address = result.data
-                    self.server_address = current_server_address
                     log.info("[Discovery] current server for app[%d] is: %s", self.appId, current_server_address)
-                    return
+                    return current_server_address
                 else:
                     log.error("[Discovery] discovery server failed due to %s", result.message)
             except IOError as e:
                 log.warn("[Discovery] discovery server failed due to request failed, address: %s", address, e)
+        raise PowerJobError('no server available')
