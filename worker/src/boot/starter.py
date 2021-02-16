@@ -29,7 +29,7 @@ class Worker(object):
         log.info("[Initialize] worker listen address: %s", self.meta.workerAddress)
 
         discovery = ServerDiscovery(self.meta)
-        discovery.discovery()
+        self.meta.currentServerAddress = discovery.discovery()
 
         HttpHandlerStarter().start(self.meta.localIp, self.meta.config.port)
         HeartbeatSender(self.meta).start()

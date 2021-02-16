@@ -26,6 +26,7 @@ class TestRemote(TestCase):
 
     def test_http_handler_starer(self):
         HttpHandlerStarter().start('127.0.0.1', 28888)
+        time.sleep(1000)
 
     def test_heartbeat(self):
         HeartbeatSender(meta).start()

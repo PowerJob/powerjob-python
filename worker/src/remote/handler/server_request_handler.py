@@ -5,9 +5,7 @@
 # Created:          2021/2/15
 # ------------------------------------------------------------------
 import json
-import tornado.ioloop
-import tornado.web
-
+from aiohttp import web
 from common.log import log
 from common.constant import WORKER_RECEIVE_SCHEDULE_PATH
 
@@ -44,17 +42,10 @@ class ServerStopInstanceReq(object):
             self.__dict__ = data
 
 
-class ServerScheduleJobHandler(tornado.web.RequestHandler):
+class ServerRequestHandler(object):
 
-    def post(self):
-        post_data = self.request.body.decode('utf-8')
-        req = json.loads(post_data, object_hook=ServerScheduleJobReq)
-        print(req)
-
-
-class ServerStopInstanceHandler(tornado.web.RequestHandler):
-
-    def __pos__(self):
-        post_data = self.request.body.decode('utf-8')
-        req = json.loads(post_data, object_hook=ServerStopInstanceReq)
-        print(req)
+    async def on_receive_server_schedule_job_req(self, request: web.Request):
+        data = await request.json()
+        req = ServerScheduleJobReq(data)
+        print(data)
+        return web.Response(text='success')
