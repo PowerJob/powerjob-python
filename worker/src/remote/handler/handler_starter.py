@@ -26,6 +26,7 @@ class HttpHandlerStarter(object):
         self.app = web.Application()
         self.app.add_routes([
             web.post(WORKER_RECEIVE_SCHEDULE_PATH, handler.on_receive_server_schedule_job_req),
+            web.post(WORKER_STOP_INSTANCE_PATH, handler.on_receive_server_stop_instance_req),
         ])
         self.runner = web.AppRunner(self.app)
 

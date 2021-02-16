@@ -90,7 +90,7 @@ class TaskDaoImpl(TaskDao):
         desc = cursor.description
         return [dict(zip([col[0] for col in desc], row)) for row in cursor.fetchall()]
 
-    def simple_update(self, query: SimpleTaskQuery, entity: TaskDO) -> bool:
+    def simple_update(self, query: SimpleTaskQuery, entity: TaskDO):
         sql = 'update task_info set ' + entity.gen_update_sql() + ' where ' + query.get_query_condition()
         execute(sql)
 

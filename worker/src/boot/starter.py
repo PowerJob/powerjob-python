@@ -7,6 +7,7 @@ from common.exception import PowerJobError
 from remote.heartbeat import HeartbeatSender
 from remote.discovery import ServerDiscovery
 from remote.handler.handler_starter import HttpHandlerStarter
+from persistence.task_service import TaskService
 from boot.worker_config import WorkerConfig
 from boot.worker_meta import WorkerRuntimeMeta
 
@@ -27,6 +28,9 @@ class Worker(object):
         self.meta.localIp = NetUtils.get_local_host()
         self.meta.workerAddress = self.meta.localIp + ':' + str(self.meta.config.port)
         log.info("[Initialize] worker listen address: %s", self.meta.workerAddress)
+
+        TaskService().init()
+        log.info("[Initialize] initialize SQLite3 database as local store successfully!")
 
         discovery = ServerDiscovery(self.meta)
         self.meta.currentServerAddress = discovery.discovery()

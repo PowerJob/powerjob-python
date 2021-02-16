@@ -12,3 +12,7 @@ LOG_REPORT_URL = 'http://%s/server/logReport'
 # worker path
 WORKER_RECEIVE_SCHEDULE_PATH = r'/worker/runJob'
 WORKER_STOP_INSTANCE_PATH = r'/worker/stopInstance'
+
+EMPTY_ADDRESS = 'N/A'
+ROOT_TASK_NAME = 'OMS_ROOT_TASK'
+LAST_TASK_NAME = 'OMS_LAST_TASK'
