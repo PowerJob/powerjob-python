@@ -5,8 +5,8 @@
 # Created:          2021/2/14
 # ------------------------------------------------------------------
 from unittest import TestCase
-from worker.src.starter import Worker
-from worker.src.starter import WorkerConfig
+from boot.starter import Worker
+from boot.starter import WorkerConfig
 
 
 class TestWorker(TestCase):

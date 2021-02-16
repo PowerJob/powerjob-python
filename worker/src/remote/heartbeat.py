@@ -9,7 +9,9 @@ import time
 import multiprocessing
 import json
 import requests
+import threading
 from common.constant import HEARTBEAT_URL
+from boot.worker_meta import WorkerRuntimeMeta
 
 
 class SystemMetrics(object):
@@ -50,12 +52,20 @@ class WorkerHeartbeat(object):
 
 class HeartbeatSender(object):
 
-    def __init__(self, app_id, app_name, worker_address):
-        self.app_id = app_id
-        self.app_name = app_name
-        self.worker_address = worker_address
+    def __init__(self, worker_runtime_meta: WorkerRuntimeMeta):
+        self.meta = worker_runtime_meta
 
-    def send(self, current_server_address):
-        url = HEARTBEAT_URL % current_server_address
-        heartbeat = WorkerHeartbeat(self.worker_address, self.app_id, self.app_name)
+    def send(self):
+        url = HEARTBEAT_URL % self.meta.currentServerAddress
+        heartbeat = WorkerHeartbeat(self.meta.workerAddress, self.meta.appId, self.meta.config.appName)
         requests.post(url, data=json.dumps(heartbeat.__dict__))
+
+    def start(self):
+
+        def timing():
+            while True:
+                self.send()
+                time.sleep(15)
+
+        threading.Thread(target=timing(), name='power-heartbeat').start()
+
