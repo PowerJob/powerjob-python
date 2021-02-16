@@ -50,3 +50,11 @@ class ServerScheduleJobHandler(tornado.web.RequestHandler):
         post_data = self.request.body.decode('utf-8')
         req = json.loads(post_data, object_hook=ServerScheduleJobReq)
         print(req)
+
+
+class ServerStopInstanceHandler(tornado.web.RequestHandler):
+
+    def __pos__(self):
+        post_data = self.request.body.decode('utf-8')
+        req = json.loads(post_data, object_hook=ServerStopInstanceReq)
+        print(req)

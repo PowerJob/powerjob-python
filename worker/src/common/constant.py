@@ -11,3 +11,4 @@ LOG_REPORT_URL = 'http://%s/server/logReport'
 
 # worker path
 WORKER_RECEIVE_SCHEDULE_PATH = r'/worker/runJob'
+WORKER_STOP_INSTANCE_PATH = r'/worker/stopInstance'
