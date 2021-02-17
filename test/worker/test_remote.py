@@ -5,6 +5,7 @@
 # Created:          2021/2/15
 # ------------------------------------------------------------------
 import time
+import aiohttp
 from unittest import TestCase
 from boot.worker_config import WorkerConfig
 from boot.worker_meta import WorkerRuntimeMeta

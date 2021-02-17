@@ -5,17 +5,20 @@
 # Created:          2021/2/16
 # ------------------------------------------------------------------
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import List
 from abc import ABCMeta, abstractmethod
 from common.log import log
 from common.lock import SegmentLock
 from common.task_status import TaskStatus
 from common.execute_type import ExecuteType
-from common.constant import ROOT_TASK_NAME, LAST_TASK_NAME, EMPTY_ADDRESS
+from common.constant import ROOT_TASK_NAME, LAST_TASK_NAME, EMPTY_ADDRESS, BROADCAST_TASK_NAME
 from core.cluster import ProcessorTrackerStatusHolder
 from persistence.task_do import TaskDO
 from persistence.task_service import TaskService
-from remote.module.server_schedule_job_req import ServerScheduleJobReq
+from remote.module.server import ServerScheduleJobReq
+from remote.module.worker import ProcessorTrackerStatusReportReq, TaskTrackerStopInstanceReq
 
 
 class InstanceInfo(object):
@@ -61,6 +64,9 @@ class TaskTracker(object):
         self.taskId2LastReportTime = dict()
         # python 线程模型比较玄学，先并发度为 1 保证安全
         self.segmentLock = SegmentLock(1)
+
+        # 调度线程池
+        self.scheduledPool = ThreadPoolExecutor(max_workers=4, thread_name_prefix='PTS')
 
         self.init_task_tracker()
 
@@ -125,7 +131,7 @@ class TaskTracker(object):
                 log.warning(
                     "[TaskTracker-%d-%d] update task status failed, this task(taskId=%s) may be processed repeatedly!",
                     self.instanceId, sub_instance_id, task_id)
-        except Exception:
+        except RuntimeError:
             log.exception("[TaskTracker-%d-%d] update task status failed.", self.instanceId, sub_instance_id)
         finally:
             self.segmentLock.unlock(lock_id)
@@ -146,5 +152,60 @@ class TaskTracker(object):
             task.lastReportTime = -1
 
         return self.taskPersistenceService.batch_save(tasks)
+
+    def receive_processor_tracker_heartbeat(self, heartbeat: ProcessorTrackerStatusReportReq):
+        self.ptStatusHolder.update(heartbeat.address, heartbeat.time, heartbeat.remainTaskNum)
+
+        # 上报空闲，检查是否已经接收到全部该 ProcessorTracker 负责的任务
+        if heartbeat.type == ProcessorTrackerStatusReportReq.IDLE:
+            idle_pt_addr = heartbeat.address
+            # 该 ProcessorTracker 已销毁，重置为初始状态
+            self.ptStatusHolder.get_processor_tracker_status(idle_pt_addr).dispatched(False)
+            unfinished = self.taskPersistenceService.get_all_unfinished_task_by_address(self.instanceId, idle_pt_addr)
+            if unfinished is not None and len(unfinished) > 0:
+                log.warning('[TaskTracker-%d] ProcessorTracker(%s) is idle now but have unfinished tasks: {}',
+                            self.instanceId, idle_pt_addr, unfinished)
+                for task in unfinished:
+                    self.update_task_status(task.subInstanceId, task.taskId, TaskStatus.WORKER_PROCESS_FAILED.value,
+                                            int(round(time.time() * 1000)), 'SYSTEM: unreceived process result')
+
+    def broadcast(self, pre_execute_success: bool, sub_instance_id, pre_task_id, result):
+        if self.finished:
+            return
+        log.info("[TaskTracker-%d-%d] finished broadcast's preProcess, preExecuteSuccess:%s,preTaskId:%s,result:%s",
+                 self.instanceId, sub_instance_id, pre_execute_success, pre_task_id, result)
+
+        if pre_execute_success:
+            sub_tasks = list()
+            for idx, address in self.ptStatusHolder.get_all_processor_tackers():
+                one = TaskDO()
+                one.subInstanceId = sub_instance_id
+                one.taskName = BROADCAST_TASK_NAME
+                one.taskId = pre_task_id + '.' + idx
+                one.address = address
+                sub_tasks.append(one)
+
+            self.submit_task(sub_tasks)
+        else:
+            log.warn("[TaskTracker-%d-%d] BroadcastTask failed because of preProcess failed, preProcess result=%s.",
+                     self.instanceId, sub_instance_id, result)
+
+    def destroy(self):
+
+        self.finished = True
+        self.scheduledPool.shutdown(wait=False)
+
+        # 通知 ProcessorTracker 释放资源  TODO: RELEASE DATA
+        stop_request = TaskTrackerStopInstanceReq()
+        stop_request.instanceId = self.instanceId
+
+
+
+
+
+
+
+
+
 
 
